@@ -4,14 +4,16 @@
 		<meta name="viewport" content="width=device-width">
 		<meta name="viewport" content="height=device-height">
 		<meta author="Revolt">
-		<meta description="YourName's Project Portfolio">
+		<meta description="Alan's Project Portfolio">
 		<meta keywords="Your, Name">
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-		<title>Your Name - Project Portfolio</title>
+		<title>Welcome to Alan's portfolio</title>
 		<link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
 		<link href='http://fonts.googleapis.com/css?family=Waiting+for+the+Sunrise' rel='stylesheet' type='text/css'>
 		<link href='http://fonts.googleapis.com/css?family=Merriweather:300,400,700,400italic' rel='stylesheet' type='text/css'>
 		<link href='http://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+		<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
 
 		<style type="text/css">
@@ -35,7 +37,7 @@
 				padding: 0;				
 			}
 			h1, h2, h3, h4, h5, h6{
-				font-family: 'Open Sans', sans-serif;
+				font-family: 'Merriweather', Georgia, serif;
 			}
 			h1{
 				font-size: 48px;
@@ -68,11 +70,11 @@
 			.logo{
 				display: inline-block;
 				position: fixed;
-				left: 10px;
-				top: 10px;
+				left: 15px;
+				top: 15px;
 				z-index: 1000;
-				width: 44px;
-				height: 44px;
+				width: 60px;
+				height: 60px;
 				background: #000;
 				color: #FFF;
 				font-size: 24px;
@@ -109,12 +111,13 @@
 			.scroll-menu{
 				display: inline-block;
 				position: fixed;
-				left: 3%;
-				top: 22%;
-				z-index: 0;
+				padding: 10px 0px;
+				left: 2%;
+				bottom: 10%;
+				z-index: 200;
 			}
 			.scroll-menu .scroll-links{ 
-				font-family: 'Open Sans', sans-serif;
+				font-family: 'Merriweather', serif;
 				display: block;
 				text-decoration: none;
 				padding: 10px 0px;
@@ -136,7 +139,7 @@
 			}
 
 			.full-page h1, .full-page h6, .full-page a{
-				font-family: Caflisch Script Pro, cursive;
+				font-family: 'Merriweather', serif;
 			}
 
 			.full-page a{
@@ -159,6 +162,10 @@
 			}
 			.uppercase{
 				text-transform: uppercase;
+			}
+
+			.normalcase{
+				text-transform: capitalize;
 			}
 
 			.left{
@@ -246,7 +253,7 @@
 				padding: 10px 25px;
 				color: #000;
 				text-decoration: none;
-				font-family: 'Open Sans', sans-serif;
+				font-family: 'Merriweather', serif;
 				border-radius: 4px;
 				position: relative;
 				top: -40px;
@@ -321,31 +328,37 @@
 
 	<body>
 		<!--TODO: change the logo initial from TT to your initials-->
-		<a href="./index.html" class="logo" title="Home"><span class="logo-initial">MJ</span></a>
+		<a href="./index.html" class="logo" title="Home"><span class="logo-initial">FPL</span></a>
 		<div class="special-menu">
 			<a href="#top" class="scroll-links special-link">Top</a>
 		</div>
 		<div class="scroll-menu">
-			<a href="#about" class="scroll-links">About</a>
-			<a href="#publications" class="scroll-links">Publications</a>
-			<a href="#projects" class="scroll-links">Projects</a>
-			<a href="#skills" class="scroll-links">Skills</a>
-			<a href="#contact" class="scroll-links last-link">Contact</a>
+			<a href="#about" class="scroll-links">about.</a>
+			<a href="#publications" class="scroll-links">publications.</a>
+			<a href="#projects" class="scroll-links">projects.</a>
+			<a href="#skills" class="scroll-links">skills.</a>
+			<a href="#blog" class="scroll-links">blogs.</a>
+			<a href="#contact" class="scroll-links last-link">contact.</a>
 		</div>
 
 		<section class="full-page" id="top">
 			<section class="left white wrapper">
 				<div class="container">
 					<div class="dummy">
-						<h1 class="uppercase">Your Name</h1>
-						<h6 class="uppercase">Your job description</h6>
+						<h1 class="normalcase">Alan</h1>
+						<h1 class="normalcase">Pak Lun</h1>
+						<h1 class="uppercase">Fung</h1>
+						<br>
+						<h6 class="uppercase"> | Air Quality Researcher |</h6>
+						<h6 class="uppercase"> | Data Analyst |</h6>
+
 					</div>
 				</div>
 			</section>
 			<section class="left black wrapper">
 				<div class="container">
 					<div class="dummy">
-						<img class="img-circle" src="images/me.png">
+						<img class="img-circle" src="images/me.gif">
 						<div><a href="#portfolio" class="button white scroll-links" title="Academics & work experiences">Explore My Work</a></div>
 					</div>
 				</div>
@@ -358,9 +371,33 @@
 <!----------------------------------------------------ABOUT-ME START--------------------------------------------------------------------------------------->
 			<h1 class="heading" id="about" name="about">About me</h1>
 			<p>
-				Interested in "XYZ" and "PQR". Experienced in alpha, beta, gamma. I work at X as Y. Before joining X, I was pursuing Z degree at ABC University</a> under the guidance of Dr. Random Advisor. I have mostly worked in the areas of blah, blah, blah. Before joining Z degree, I worked at this useless tech giant company as a Systems Engineer for over a year. Apart from blah blah, I love working on X kind of problems. I also love doing _ in my free time.
+				Pak Lun Fung received the Ph.D. degree in atmospheric science from the Institute for Atmospheric and Earth System Research, University of Helsinki, Helsinki, Finland, in 2022.,His dissertation focuses on the proxy derivation of air quality parameters in urban regions. His current research topics include microscopic traffic emission modeling and geospatial analysis on environmental data.
 			</p>
 <!----------------------------------------------------ABOUT-ME END--------------------------------------------------------------------------------------->
+
+<!----------------------------------------------------In a nutshell START----------------------------------------------------------------------------------->
+<div class="container-fluid p-5 bg-white text-black text-center">
+	<div class="container mt-5">
+	<div class="row">
+	  <div class="col-sm-4">
+		<h3>8</h3>
+		<p>Years Research Experience</p>
+
+	  </div>
+	  <div class="col-sm-4">
+		<h3>30+</h3>
+		<p>Paper Published</p>
+
+	  </div>
+	  <div class="col-sm-4">
+		<h3>1000+</h3>        
+		<p>Data Analyzed</p>
+
+	  </div>
+	</div>
+  </div>
+</div>				
+<!----------------------------------------------------In a nutshell END----------------------------------------------------------------------------------->
 
 <!----------------------------------------------------EDUCATION START--------------------------------------------------------------------------------------->				
 			<h1 class="heading" id="education" name="education">Education</h1>
@@ -368,24 +405,34 @@
 			<section class="grid-collection">
 				
 				<div class="item">
-					<div class="project-title">Degree X</div>
-					<div class="paper-detail"><b>School/College:</b> ABC college of engineering</div>
-					<div class="paper-detail"><b>CGPA:</b> 8.0</div>
-					<div class="paper-detail"><b>Duration:</b> 2011-2013</div>
+					<div class="project-title">Doctor of Science in Atmospheric Science</div>
+					<div class="paper-detail">Institute for Atmospheric and Earth System Research / Physics</div>
+					<div class="paper-detail">University of Helsinki</div>
+					<div class="paper-detail">Distinction</div>
+					<div class="paper-detail">2019-2022</div>
 				</div>
 				
 				<div class="item">
-					<div class="project-title">Degree X</div>
-					<div class="paper-detail"><b>School/College:</b> ABC college of engineering</div>
-					<div class="paper-detail"><b>CGPA:</b> 8.0</div>
-					<div class="paper-detail"><b>Duration:</b> 2011-2013</div>
+					<div class="project-title">Master of Science in Atmospheric Science</div>
+					<div class="paper-detail">Department of Physics</div>
+					<div class="paper-detail">University of Helsinki</div>
+					<div class="paper-detail">4/5</div>
+					<div class="paper-detail">2015-2018</div>
+				</div>
+
+				<div class="item">
+					<div class="project-title">Exchange study during my master</div>
+					<div class="paper-detail">Department of Ecosystem</div>
+					<div class="paper-detail">Lund University</div>
+					<div class="paper-detail">2016</div>
 				</div>
 				
 				<div class="item">
-					<div class="project-title">Degree X</div>
-					<div class="paper-detail"><b>School/College:</b> ABC college of engineering</div>
-					<div class="paper-detail"><b>CGPA:</b> 8.0</div>
-					<div class="paper-detail"><b>Duration:</b> 2011-2013</div>
+					<div class="project-title">Bachelor of Science in Earth Sciences (minor in Geography)</div>
+					<div class="paper-detail">Department of Earth Sciences</div>
+					<div class="paper-detail">The University of Hong Kong</div>
+					<div class="paper-detail">Second Honour</div>
+					<div class="paper-detail">2008-2011</div>
 				</div>
 
 
@@ -393,57 +440,67 @@
 <!----------------------------------------------------EDUCATION END--------------------------------------------------------------------------------------->	
 			
 <!----------------------------------------------------PUBLICATION START--------------------------------------------------------------------------------------->			
-			<h1 class="heading" id="publications" name="publications">Publications</h1>
+			<br>
+			<br>
+			<h1 class="heading" id="publications" name="publications">Recent Publications</h1>
 	        
 			<!--Paper 1: START-->
 			<div class="item">
-	        	<div class="paper-detail"><i>[Publlished] </i><span class="authors">Author1 Name, Author2 Name, Author3 Name, </span><span class="paper-title"><b>Complete Name of Paper 1,</b> </span><span class="workshop-details"> to <b>Conference 1 Acronym</b> (Conference 1 Full Name)</span></div>
+	        	<div class="paper-detail"><span class="authors"><b>Fung, P. L.</b>, Al-Jaghbeer, O., Chen, J., Paunu, V. V., Vosough, S., Roncoli, C., & Järvi, L. </span>(2025). <span class="paper-title"><b>A geospatial approach for dynamic on-road emission through open-access floating car data.</b> </span><span class="workshop-details"> <i>Environmental Research Letters 20 </i>(1), 014033.</span></div>
 	        	<div class="link">
-	        		<a href="http://ieeexplore.ieee.org/document/7975281/" target="_blank">IEEE Explore Link</a>;
+	        		<a href="http://doi.org/10.1088/1748-9326/ad984d" target="_blank">IOP Link</a>
 	        	</div>
 	        </div>
 			<!--Paper 1: END-->
 			
 			<!--Paper 2: START-->
 			<div class="item">
-	        	<div class="paper-detail"><i>[Submitted] </i><span class="authors">Author1 Name, Author2 Name, Author3 Name, </span><span class="paper-title"><b>Complete Name of Paper 1,</b> </span><span class="workshop-details"> to <b>Conference 2 Acronym</b> (Conference 2 Full Name)</span></div>
+	        	<div class="paper-detail"><span class="authors">Al-Jaghbeer, O., <b>Fung, P. L.</b>, Paunu, V. V., & Järvi, L. </span>(2024). <span class="paper-title"><b>Mapping CO2 traffic emissions within local climate zones in Helsinki,</b> </span><span class="workshop-details"> <i>Urban Climate 58</i>, 102171.</span></div>
 	        	<div class="link">
-	        		<a href="http://ieeexplore.ieee.org/document/7975281/" target="_blank">IEEE Explore Link</a>;
+	        		<a href="https://doi.org/10.1016/j.uclim.2024.102171" target="_blank">Elsevier Link</a>
 	        	</div>
 	        </div>
 			<!--Paper 2: END-->
 			
 			<!--Paper 3: START-->
-	        <div class="item">
-	        	<div class="paper-detail"><i>[Submitted] </i><span class="authors">Author1 Name, Author2 Name, Author3 Name, </span><span class="paper-title"><b>Complete Name of Paper 1,</b> </span><span class="workshop-details"> to <b>Conference 3 Acronym</b> (Conference 3 Full Name)</span></div>
+			<div class="item">
+	        	<div class="paper-detail"><span class="authors">Zhao, J., <b>Fung, P. L.</b>, Zaidan, M. A., Wehner, B., Weinhold, K., Wiedensohler, A., & Hussein, T. </span>(2024). <span class="paper-title"><b>Indoor Black Carbon Concentrations and their Sources in Residential Environments: Validation of an Input-adaptive Proxy Model,</b> </span><span class="workshop-details"> <i>Aerosol and Air Quality Research 24 </i>(5), 230228.</span></div>
 	        	<div class="link">
-	        		<a href="http://ieeexplore.ieee.org/document/7975281/" target="_blank">IEEE Explore Link</a>;
+	        		<a href="https://doi.org/10.4209/aaqr.230228" target="_blank">Springer Link</a>
 	        	</div>
 	        </div>
 			<!--Paper 3: END-->
 			
 			<!--Paper 4: START-->
 			<div class="item">
-	        	<div class="paper-detail"><i>[Publlished] </i><span class="authors">Author1 Name, Author2 Name, Author3 Name, </span><span class="paper-title"><b>Complete Name of Paper 1,</b> </span><span class="workshop-details"> to <b>Conference 4 Acronym</b> (Conference 4 Full Name)</span></div>
+	        	<div class="paper-detail"><span class="authors">Liu, X., Concas, F., Motlagh, N. H., Zaidan, M. A., <b>Fung, P. L.</b>, Varjonen, S., Niemi, J. V., Timonen, H., Hussein, T., Petäjä, T., Kulmala, M., Nurmi, P., & Tarkoma, S. </span>(2024). <span class="paper-title"><b>Estimating black carbon levels with proxy variables and low-cost sensors,</b> </span><span class="workshop-details"> <i>IEEE Internet of Things Journal 11</i> (10), 17577-17588.</span></div>
 	        	<div class="link">
-	        		<a href="http://ieeexplore.ieee.org/document/7975281/" target="_blank">IEEE Explore Link</a>;
+	        		<a href="https://doi.org/10.1109/JIOT.2024.3361977" target="_blank">IEEE Link</a>
 	        	</div>
 	        </div>
 			<!--Paper 4: END-->
 
+			<!--Paper 5: START-->
+			<div class="item">
+	        	<div class="paper-detail"><span class="authors"><b>Fung, P. L.</b>, Savadkoohi, M., Zaidan, M. A., Niemi, J. V., Timonen, H., Pandolfi, M., Alastuey, A., Qurol Carceller, X., Hussein, T., & Petaja, T. </span>(2024). <span class="paper-title"><b>Constructing transferable and interpretable machine learning models for black carbon concentrations,</b> </span><span class="workshop-details"> <i>Environment International 184</i>, 108449.</span></div>
+	        	<div class="link">
+	        		<a href="https://doi.org/10.1016/j.envint.2024.108449" target="_blank">Elsevier Link</a>
+	        	</div>
+	        </div>
+			<!--Paper 5: END-->
 <!----------------------------------------------------PUBLICATION END--------------------------------------------------------------------------------------->	
 
 <!----------------------------------------------------PROJECTS START---------------------------------------------------------------------------------------->	
 
-			<h1 class="heading" id="projects" name="projectsml">Projects</h1>
+			<h1 class="heading" id="projects" name="projectsml">Ongoing Projects</h1>
 			<section class="grid-collection">
 				
 				<!--Project 1: START-->
 				<div class="item">
-					<div class="project-title">Use Deep Learning to Clone Driving Behavior</div>
-					<div><code class="id_tags">Python</code> <code class="id_tags">Computer Vision</code> <code class="id_tags">Deep Learning</code></div>
+					<div class="project-title">Use Floating Car Data to Estimate Real-time Traffic Emissions</div>
+					<div><code class="id_tags">Python</code> <code class="id_tags">Driving trajectory</code> <code class="id_tags">Emission factor</code></div>
 					
-					<div class="project-description">Built and trained a convolutional neural network for end-to-end driving in a simulator,using TensorFlow and Keras. Used optimization techniques such as regularization and dropout to generalize the network for driving on multiple tracks. </div>
+					<div class="project-description">Built and trained a convolutional neural network for end-to-end driving in a simulator, using TensorFlow and Keras. Used optimization techniques such as regularization and dropout to generalize the network for driving on multiple tracks. </div>
 					<div class="project-links">
 						<a href="https://github.com/rajesh-iiith/CarND-DeepLearning-ComputerVision/blob/master/CarND-Behavioral-Cloning-P3/writeup_template.md" target="_blank">Report</a>; 
 						<a href="https://github.com/rajesh-iiith/CarND-DeepLearning-ComputerVision/tree/master/CarND-Behavioral-Cloning-P3" target="_blank">Code</a>
@@ -453,8 +510,8 @@
 				
 				<!--Project 2: START-->
 				<div class="item">
-					<div class="project-title">Vehicle Detection and Tracking</div>
-					<div><code class="id_tags">Python</code> <code class="id_tags">Computer Vision</code> <code class="id_tags">Deep Learning</code></div>
+					<div class="project-title">Improve Air Quality Index with Particulate Matter</div>
+					<div><code class="id_tags">Matlab</code> <code class="id_tags">Health</code> <code class="id_tags">Air Qaulity</code></div>
 					
 					<div class="project-description">Created a vehicle detection and tracking pipeline with OpenCV, histogram of oriented gradients (HOG), and support vector machines (SVM). Optimized and evaluated the model on video data from a automotive camera taken during highway driving. </div>
 					<div class="project-links">
@@ -463,19 +520,59 @@
 					</div>
 				</div>
 				<!--Project 2: END-->
+				
+				<!--Project 3: START-->
+				<div class="item">
+					<div class="project-title">Develop a Input-Adaptive Proxy for Air pollutant Datasets</div>
+					<div><code class="id_tags">Matlab</code> <code class="id_tags">Sensors</code> <code class="id_tags">Machine Learning</code></div>
+					
+					<div class="project-description">Created a vehicle detection and tracking pipeline with OpenCV, histogram of oriented gradients (HOG), and support vector machines (SVM). Optimized and evaluated the model on video data from a automotive camera taken during highway driving. </div>
+					<div class="project-links">
+						<a href="https://github.com/rajesh-iiith/CarND-DeepLearning-ComputerVision/blob/master/CarND-Vehicle-Detection-P5/writeup.md" target="_blank">Report</a>; 
+						<a href="https://github.com/rajesh-iiith/CarND-DeepLearning-ComputerVision/tree/master/CarND-Vehicle-Detection-P5" target="_blank">Code</a>
+					</div>
+				</div>
+				<!--Project 3: END-->
 
 			</section>
 <!----------------------------------------------------PROJECTS END---------------------------------------------------------------------------------------->				
 
 <!----------------------------------------------------SKILLS START---------------------------------------------------------------------------------------->				
+			<br>
+			<br>
 			<h1 class="heading" id="skills" name="skills">Skills</h1>
 			<div class="item">
-					<div class="paper-detail"><b>Category 1:</b> alpha, beta, gamma</div>
-					<div class="paper-detail"><b>Category 2:</b> alpha, beta, gamma</div>
-					<div class="paper-detail"><b>Category 3:</b> alpha, beta, gamma</div>
+					<div class="paper-detail"><b>Technical Skills:</b> Data Visualisation</div>
+					<div class="paper-detail"><b>Programming Languages:</b>	MatLAB, Python, R</div>
+					<div class="paper-detail"><b>Languages:</b> Chinese (Cantonese, Mandarin), English, Finnish (beginner)</div>
 				</div>
 
+				
 <!----------------------------------------------------SKILLS END---------------------------------------------------------------------------------------->			
+
+<!----------------------------------------------------BLOG START---------------------------------------------------------------------------------------->				
+<h1 class="heading" id="blogs" name="blogs">Blogs</h1>
+<div class="item">
+	<p>The occasional technology musing as well as research in progress.</p><br>
+
+    <div class="blog-container">
+        <div>
+            <p class="blog_date">Apr 27 2021</p>
+            <a href="blog-posts/post-04-27-2021.html" class="blog_text">How to deploy a static website to Amazon S3</a>
+        </div>
+        <div>
+            <p class="blog_date">Jun 7 2020</p>
+            <a href="blog-posts/post-04-27-2021.html" class="blog_text">Placeholder</a>
+        </div>
+        <div>
+            <p class="blog_date">Jan 2 2020</p>
+            <a href="blog-posts/post-04-27-2021.html" class="blog_text">Placeholder</a>
+        </div>  
+    </div>
+	</div>
+
+<!----------------------------------------------------BLOG END---------------------------------------------------------------------------------------->			
+
 
 			<h1 class="heading" id="contact" name="contact">Contact</h1>
 			<p class="contacts">

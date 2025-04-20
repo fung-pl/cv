@@ -82,6 +82,23 @@
         .high {
             background-color: #F44336; /* Red */
         }
+        .day-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .day-button {
+            padding: 8px 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f5f5f5;
+            cursor: pointer;
+        }
+        .day-button.active {
+            background-color: #0066cc;
+            color: white;
+            border-color: #0066cc;
+        }
     </style>
 </head>
 <body>
@@ -114,6 +131,13 @@
             </div>
         </div>
         
+        <div class="day-selector">
+            <button class="day-button" id="yesterday-btn">Yesterday</button>
+            <button class="day-button active" id="today-btn">Today</button>
+            <button class="day-button" id="tomorrow-btn">Tomorrow</button>
+            <button class="day-button" id="all-btn">All Days</button>
+        </div>
+        
         <div class="chart-container" id="price-chart">
             <div class="loading">Loading electricity price data...</div>
         </div>
@@ -122,6 +146,10 @@
     </div>
 
     <script>
+        // Global variables to store data
+        let allPriceData = null;
+        let currentView = 'today';
+        
         // Function to format time for display
         function formatTime(timeString) {
             const DateTime = luxon.DateTime;
@@ -171,6 +199,7 @@
                 
                 // Process the XML data
                 const processedData = processEntsoeData(xmlDoc, now);
+                allPriceData = processedData;
                 updateDashboard(processedData);
             } catch (error) {
                 console.error('Error fetching electricity prices:', error);
@@ -182,6 +211,7 @@
                     const fallbackResponse = await fetch('./data/electricity-prices.json');
                     if (fallbackResponse.ok) {
                         const fallbackData = await fallbackResponse.json();
+                        allPriceData = fallbackData;
                         updateDashboard(fallbackData);
                         console.log('Using fallback data');
                     } else {
@@ -294,26 +324,84 @@
             };
         }
         
+        // Function to filter data by day
+        function filterDataByDay(data, day) {
+            if (!data || !data.hourly_data) return data;
+            
+            const DateTime = luxon.DateTime;
+            const now = DateTime.now().setZone('Europe/Helsinki');
+            
+            let filteredData = {...data};
+            let startOfDay, endOfDay;
+            
+            if (day === 'yesterday') {
+                startOfDay = now.minus({ days: 1 }).startOf('day');
+                endOfDay = now.minus({ days: 1 }).endOf('day');
+            } else if (day === 'today') {
+                startOfDay = now.startOf('day');
+                endOfDay = now.endOf('day');
+            } else if (day === 'tomorrow') {
+                startOfDay = now.plus({ days: 1 }).startOf('day');
+                endOfDay = now.plus({ days: 1 }).endOf('day');
+            } else {
+                // 'all' - return all data
+                return data;
+            }
+            
+            // Filter hourly data for the selected day
+            filteredData.hourly_data = data.hourly_data.filter(item => {
+                const itemTime = DateTime.fromISO(item.time);
+                return itemTime >= startOfDay && itemTime <= endOfDay;
+            });
+            
+            // Recalculate statistics for the filtered data
+            if (filteredData.hourly_data.length > 0) {
+                const prices = filteredData.hourly_data.map(item => item.price);
+                filteredData.average_price = prices.reduce((sum, price) => sum + price, 0) / prices.length;
+                
+                const minPrice = Math.min(...prices);
+                const maxPrice = Math.max(...prices);
+                
+                const minItem = filteredData.hourly_data.find(item => item.price === minPrice);
+                const maxItem = filteredData.hourly_data.find(item => item.price === maxPrice);
+                
+                filteredData.min_price = {
+                    value: minPrice,
+                    time: minItem.time
+                };
+                
+                filteredData.max_price = {
+                    value: maxPrice,
+                    time: maxItem.time
+                };
+            }
+            
+            return filteredData;
+        }
+        
         // Function to update the dashboard with data
         function updateDashboard(data) {
+            // Filter data based on current view
+            const filteredData = filterDataByDay(data, currentView);
+            
             // Update stats
             document.getElementById('current-price').textContent = data.current_price.toFixed(2);
-            document.getElementById('avg-price').textContent = data.average_price.toFixed(2);
-            document.getElementById('min-price').textContent = data.min_price.value.toFixed(2);
-            document.getElementById('min-time').textContent = formatTime(data.min_price.time);
-            document.getElementById('max-price').textContent = data.max_price.value.toFixed(2);
-            document.getElementById('max-time').textContent = formatTime(data.max_price.time);
+            document.getElementById('avg-price').textContent = filteredData.average_price.toFixed(2);
+            document.getElementById('min-price').textContent = filteredData.min_price.value.toFixed(2);
+            document.getElementById('min-time').textContent = formatTime(filteredData.min_price.time);
+            document.getElementById('max-price').textContent = filteredData.max_price.value.toFixed(2);
+            document.getElementById('max-time').textContent = formatTime(filteredData.max_price.time);
             document.getElementById('update-time').textContent = formatTime(data.last_updated);
             
             // Update price indicator
-            updatePriceIndicator(data.current_price, data.average_price, data.min_price.value, data.max_price.value);
+            updatePriceIndicator(data.current_price, filteredData.average_price, filteredData.min_price.value, filteredData.max_price.value);
             
             // Create the chart
-            const times = data.hourly_data.map(item => formatTime(item.time));
-            const prices = data.hourly_data.map(item => item.price);
+            const times = filteredData.hourly_data.map(item => item.time);
+            const prices = filteredData.hourly_data.map(item => item.price);
             
             const trace = {
-                x: data.hourly_data.map(item => item.time),
+                x: times,
                 y: prices,
                 mode: 'lines+markers',
                 name: 'Price',
@@ -324,8 +412,20 @@
                 hovertemplate: '%{x|dd.MM HH:mm}: %{y:.2f} cents/kWh<extra></extra>'
             };
             
+            // Determine chart title based on current view
+            let chartTitle = 'Hourly Electricity Prices in Finland';
+            if (currentView === 'yesterday') {
+                chartTitle = 'Yesterday\'s Electricity Prices';
+            } else if (currentView === 'today') {
+                chartTitle = 'Today\'s Electricity Prices';
+            } else if (currentView === 'tomorrow') {
+                chartTitle = 'Tomorrow\'s Electricity Prices';
+            } else {
+                chartTitle = 'Electricity Prices (All Days)';
+            }
+            
             const layout = {
-                title: 'Hourly Electricity Prices in Finland',
+                title: chartTitle,
                 xaxis: {
                     title: 'Time',
                     type: 'date',
@@ -338,10 +438,10 @@
                 hovermode: 'closest',
                 shapes: [{
                     type: 'line',
-                    x0: data.hourly_data[0].time,
-                    y0: data.average_price,
-                    x1: data.hourly_data[data.hourly_data.length - 1].time,
-                    y1: data.average_price,
+                    x0: times[0],
+                    y0: filteredData.average_price,
+                    x1: times[times.length - 1],
+                    y1: filteredData.average_price,
                     line: {
                         color: 'green',
                         width: 2,
@@ -352,10 +452,14 @@
             
             Plotly.newPlot('price-chart', [trace], layout);
             
-            // Add a horizontal line for the current price
-            if (data.current_price) {
+            // Add a horizontal line for the current price if we're viewing today or all days
+            if (currentView === 'today' || currentView === 'all') {
+                const DateTime = luxon.DateTime;
+                const now = DateTime.now().setZone('Europe/Helsinki');
+                const currentHour = now.startOf('hour').toISO();
+                
                 Plotly.addTraces('price-chart', {
-                    x: [data.hourly_data[0].time, data.hourly_data[data.hourly_data.length - 1].time],
+                    x: [times[0], times[times.length - 1]],
                     y: [data.current_price, data.current_price],
                     mode: 'lines',
                     name: 'Current Price',
@@ -394,8 +498,50 @@
             }
         }
         
+        // Set up day selector buttons
+        function setupDayButtons() {
+            document.getElementById('yesterday-btn').addEventListener('click', function() {
+                setActiveDay('yesterday');
+            });
+            
+            document.getElementById('today-btn').addEventListener('click', function() {
+                setActiveDay('today');
+            });
+            
+            document.getElementById('tomorrow-btn').addEventListener('click', function() {
+                setActiveDay('tomorrow');
+            });
+            
+            document.getElementById('all-btn').addEventListener('click', function() {
+                setActiveDay('all');
+            });
+        }
+        
+        // Set active day and update view
+        function setActiveDay(day) {
+            // Update active button
+            document.querySelectorAll('.day-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById(`${day}-btn`).classList.add('active');
+            
+            // Update current view
+            currentView = day;
+            
+            // Update dashboard with filtered data
+            if (allPriceData) {
+                updateDashboard(allPriceData);
+            }
+        }
+        
         // Load data when the page loads
-        document.addEventListener('DOMContentLoaded', fetchElectricityPrices);
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set up day selector buttons
+            setupDayButtons();
+            
+            // Fetch electricity prices
+            fetchElectricityPrices();
+        });
         
         // Refresh data every 15 minutes
         setInterval(fetchElectricityPrices, 15 * 60 * 1000);

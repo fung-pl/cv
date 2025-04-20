@@ -152,9 +152,18 @@
         
         // Function to format time for display
         function formatTime(timeString) {
-            const DateTime = luxon.DateTime;
-            const date = DateTime.fromISO(timeString);
-            return date.toFormat('dd.MM HH:mm');
+            if (!timeString) return "--";
+            
+            try {
+                const DateTime = luxon.DateTime;
+                // Parse the ISO string and explicitly set to Helsinki timezone
+                const date = DateTime.fromISO(timeString).setZone('Europe/Helsinki');
+                // Format with Finnish style date/time
+                return date.toFormat('dd.MM. HH:mm');
+            } catch (e) {
+                console.error("Error formatting time:", e);
+                return timeString;
+            }
         }
         
         // Function to fetch electricity prices using a CORS proxy
@@ -182,7 +191,6 @@
                 
                 // Construct the API URL
                 const apiUrl = `https://web-api.tp.entsoe.eu/api?securityToken=${apiKey}&documentType=${documentType}&in_Domain=${inDomain}&out_Domain=${outDomain}&periodStart=${periodStart}&periodEnd=${periodEnd}`;
-                
                 // Try to fetch data from ENTSO-E API
                 const response = await fetch(corsProxy + apiUrl);
                 
@@ -226,109 +234,161 @@
         }
         
         // Process data from ENTSO-E API
-        function processEntsoeData(xmlDoc, now) {
-            // Extract time series data from XML
-            const timeSeries = xmlDoc.getElementsByTagName('TimeSeries');
+function processEntsoeData(xmlDoc, now) {
+    // Extract time series data from XML
+    const timeSeries = xmlDoc.getElementsByTagName('TimeSeries');
+    
+    if (timeSeries.length === 0) {
+        throw new Error('No time series data found in ENTSO-E response');
+    }
+    
+    console.log(`Found ${timeSeries.length} time series in the ENTSO-E response`);
+    
+    // Initialize arrays for data
+    const hourlyData = [];
+    
+    // Process each time series
+    for (let seriesIndex = 0; seriesIndex < timeSeries.length; seriesIndex++) {
+        const series = timeSeries[seriesIndex];
+        
+        // Get the price unit and currency (should be the same for all series)
+        const priceMeasureUnit = series.getElementsByTagName('price_Measure_Unit.name')[0].textContent;
+        const currency = series.getElementsByTagName('currency_Unit.name')[0].textContent;
+        
+        // Get the time period for this series
+        const timeInterval = series.getElementsByTagName('Period');
+        
+        // Process each time period in this series
+        for (let i = 0; i < timeInterval.length; i++) {
+            const period = timeInterval[i];
+            const timeStartElement = period.getElementsByTagName('timeInterval')[0].getElementsByTagName('start')[0];
+            const timeEndElement = period.getElementsByTagName('timeInterval')[0].getElementsByTagName('end')[0];
+            const timeStart = timeStartElement.textContent;
+            const timeEnd = timeEndElement.textContent;
+            const resolution = period.getElementsByTagName('resolution')[0].textContent;
+            const points = period.getElementsByTagName('Point');
             
-            if (timeSeries.length === 0) {
-                throw new Error('No time series data found in ENTSO-E response');
-            }
+            console.log(`Processing time period: ${timeStart} to ${timeEnd} with ${points.length} points`);
             
-            // Process the first time series (day-ahead prices)
-            const series = timeSeries[0];
+            // Parse the start time - ensure it's in UTC
+            const startTime = luxon.DateTime.fromISO(timeStart);
             
-            // Get the price unit
-            const priceMeasureUnit = series.getElementsByTagName('price_Measure_Unit.name')[0].textContent;
-            const currency = series.getElementsByTagName('currency_Unit.name')[0].textContent;
-            
-            // Get the time period
-            const timeInterval = series.getElementsByTagName('Period');
-            
-            // Initialize arrays for data
-            const hourlyData = [];
-            
-            // Process each time period
-            for (let i = 0; i < timeInterval.length; i++) {
-                const period = timeInterval[i];
-                const timeStart = period.getElementsByTagName('timeInterval')[0].getElementsByTagName('start')[0].textContent;
-                const resolution = period.getElementsByTagName('resolution')[0].textContent;
-                const points = period.getElementsByTagName('Point');
+            // Process each point (hourly price)
+            for (let j = 0; j < points.length; j++) {
+                const point = points[j];
+                const position = parseInt(point.getElementsByTagName('position')[0].textContent);
+                const price = parseFloat(point.getElementsByTagName('price.amount')[0].textContent);
                 
-                // Parse the start time
-                const startTime = luxon.DateTime.fromISO(timeStart);
+                // Calculate the time for this point
+                // Position 1 = first hour of the interval
+                const pointTime = startTime.plus({ hours: position - 1 });
                 
-                // Process each point (hourly price)
-                for (let j = 0; j < points.length; j++) {
-                    const point = points[j];
-                    const position = parseInt(point.getElementsByTagName('position')[0].textContent);
-                    const price = parseFloat(point.getElementsByTagName('price.amount')[0].textContent);
-                    
-                    // Calculate the time for this point
-                    // Position 1 = first hour of the interval
-                    const pointTime = startTime.plus({ hours: position - 1 });
-                    
-                    // Convert price from EUR/MWh to cents/kWh
-                    // 1 EUR/MWh = 0.1 cents/kWh
-                    const priceInCentsPerKWh = price * 0.1;
-                    
+                // Convert price from EUR/MWh to cents/kWh
+                // 1 EUR/MWh = 0.1 cents/kWh
+                const priceInCentsPerKWh = price * 0.1;
+                
+                // Check if we already have data for this time (avoid duplicates)
+                const existingIndex = hourlyData.findIndex(item => 
+                    luxon.DateTime.fromISO(item.time).valueOf() === pointTime.valueOf()
+                );
+                
+                if (existingIndex === -1) {
+                    // Add new data point
                     hourlyData.push({
+                        // Store time in ISO format with timezone info
                         time: pointTime.toISO(),
                         price: priceInCentsPerKWh
                     });
+                } else {
+                    // Log if we found duplicate data (shouldn't happen, but good to check)
+                    console.log(`Duplicate data found for time ${pointTime.toISO()}`);
                 }
             }
-            
-            // Sort data by time
-            hourlyData.sort((a, b) => new Date(a.time) - new Date(b.time));
-            
-            // Calculate statistics
-            const prices = hourlyData.map(item => item.price);
-            const avgPrice = prices.reduce((sum, price) => sum + price, 0) / prices.length;
-            const minPrice = Math.min(...prices);
-            const maxPrice = Math.max(...prices);
-            
-            // Find min and max times
-            const minItem = hourlyData.find(item => item.price === minPrice);
-            const maxItem = hourlyData.find(item => item.price === maxPrice);
-            
-            // Find current price (closest hour)
-            const currentTime = now.startOf('hour').toISO();
-            let currentPrice;
-            let closestItem = hourlyData[0];
-            let minTimeDiff = Infinity;
-            
-            for (const item of hourlyData) {
-                const timeDiff = Math.abs(new Date(item.time) - new Date(currentTime));
-                if (timeDiff < minTimeDiff) {
-                    minTimeDiff = timeDiff;
-                    closestItem = item;
-                }
-            }
-            
-            currentPrice = closestItem.price;
-            
-            // Format data for our dashboard
-            return {
-                last_updated: now.toISO(),
-                current_price: currentPrice,
-                average_price: avgPrice,
-                min_price: {
-                    value: minPrice,
-                    time: minItem.time
-                },
-                max_price: {
-                    value: maxPrice,
-                    time: maxItem.time
-                },
-                hourly_data: hourlyData
-            };
         }
+    }
+    
+    // Sort data by time
+    hourlyData.sort((a, b) => 
+        luxon.DateTime.fromISO(a.time).valueOf() - 
+        luxon.DateTime.fromISO(b.time).valueOf()
+    );
+    
+    console.log(`Processed ${hourlyData.length} total hourly data points`);
+    
+    // Calculate statistics
+    const prices = hourlyData.map(item => item.price);
+    const avgPrice = prices.reduce((sum, price) => sum + price, 0) / prices.length;
+    const minPrice = Math.min(...prices);
+    const maxPrice = Math.max(...prices);
+    
+    // Find min and max times
+    const minItem = hourlyData.find(item => item.price === minPrice);
+    const maxItem = hourlyData.find(item => item.price === maxPrice);
+    
+    // Find current price (closest hour)
+    const currentTime = now.startOf('hour').toISO();
+    let currentPrice;
+    let closestItem = hourlyData[0];
+    let minTimeDiff = Infinity;
+    
+    for (const item of hourlyData) {
+        const timeDiff = Math.abs(
+            luxon.DateTime.fromISO(item.time).valueOf() - 
+            luxon.DateTime.fromISO(currentTime).valueOf()
+        );
+        if (timeDiff < minTimeDiff) {
+            minTimeDiff = timeDiff;
+            closestItem = item;
+        }
+    }
+    
+    currentPrice = closestItem.price;
+    
+    // Group data by day for debugging
+    const yesterday = now.minus({ days: 1 }).startOf('day');
+    const today = now.startOf('day');
+    const tomorrow = now.plus({ days: 1 }).startOf('day');
+    
+    const yesterdayData = hourlyData.filter(item => {
+        const itemTime = luxon.DateTime.fromISO(item.time).setZone('Europe/Helsinki');
+        return itemTime >= yesterday && itemTime < today;
+    });
+    
+    const todayData = hourlyData.filter(item => {
+        const itemTime = luxon.DateTime.fromISO(item.time).setZone('Europe/Helsinki');
+        return itemTime >= today && itemTime < tomorrow;
+    });
+    
+    const tomorrowData = hourlyData.filter(item => {
+        const itemTime = luxon.DateTime.fromISO(item.time).setZone('Europe/Helsinki');
+        return itemTime >= tomorrow;
+    });
+    
+    console.log(`Data points by day: Yesterday: ${yesterdayData.length}, Today: ${todayData.length}, Tomorrow: ${tomorrowData.length}`);
+    
+    // Format data for our dashboard
+    return {
+        last_updated: now.toISO(),
+        current_price: currentPrice,
+        average_price: avgPrice,
+        min_price: {
+            value: minPrice,
+            time: minItem.time
+        },
+        max_price: {
+            value: maxPrice,
+            time: maxItem.time
+        },
+        hourly_data: hourlyData
+    };
+}
         
         // Function to filter data by day
         function filterDataByDay(data, day) {
             if (!data || !data.hourly_data) return data;
             
             const DateTime = luxon.DateTime;
+            // Ensure we're working in Helsinki timezone
             const now = DateTime.now().setZone('Europe/Helsinki');
             
             let filteredData = {...data};
@@ -350,7 +410,8 @@
             
             // Filter hourly data for the selected day
             filteredData.hourly_data = data.hourly_data.filter(item => {
-                const itemTime = DateTime.fromISO(item.time);
+                // Parse time and ensure it's in Helsinki timezone
+                const itemTime = DateTime.fromISO(item.time).setZone('Europe/Helsinki');
                 return itemTime >= startOfDay && itemTime <= endOfDay;
             });
             
@@ -396,13 +457,13 @@
             // Update price indicator
             updatePriceIndicator(data.current_price, filteredData.average_price, filteredData.min_price.value, filteredData.max_price.value);
             
-            // Create the chart
-            const times = filteredData.hourly_data.map(item => item.time);
-            const prices = filteredData.hourly_data.map(item => item.price);
-            
+            // Create the chart with proper timezone handling
             const trace = {
-                x: times,
-                y: prices,
+                x: filteredData.hourly_data.map(item => {
+                    // Convert ISO string to Date object for Plotly with explicit timezone
+                    return luxon.DateTime.fromISO(item.time).setZone('Europe/Helsinki').toJSDate();
+                }),
+                y: filteredData.hourly_data.map(item => item.price),
                 mode: 'lines+markers',
                 name: 'Price',
                 line: {
@@ -430,7 +491,15 @@
                     title: 'Time',
                     type: 'date',
                     tickformat: '%d.%m %H:%M',
-                    rangeslider: {visible: true}
+                    rangeslider: {visible: true},
+                    // Ensure time zone is correctly set for display
+                    tickformatstops: [{
+                        dtickrange: [null, 86400000],
+                        value: '%H:%M'
+                    }, {
+                        dtickrange: [86400000, null],
+                        value: '%d.%m %H:%M'
+                    }]
                 },
                 yaxis: {
                     title: 'Price (cents/kWh)'
@@ -438,9 +507,9 @@
                 hovermode: 'closest',
                 shapes: [{
                     type: 'line',
-                    x0: times[0],
+                    x0: trace.x[0],
                     y0: filteredData.average_price,
-                    x1: times[times.length - 1],
+                    x1: trace.x[trace.x.length - 1],
                     y1: filteredData.average_price,
                     line: {
                         color: 'green',
@@ -456,10 +525,9 @@
             if (currentView === 'today' || currentView === 'all') {
                 const DateTime = luxon.DateTime;
                 const now = DateTime.now().setZone('Europe/Helsinki');
-                const currentHour = now.startOf('hour').toISO();
                 
                 Plotly.addTraces('price-chart', {
-                    x: [times[0], times[times.length - 1]],
+                    x: [trace.x[0], trace.x[trace.x.length - 1]],
                     y: [data.current_price, data.current_price],
                     mode: 'lines',
                     name: 'Current Price',

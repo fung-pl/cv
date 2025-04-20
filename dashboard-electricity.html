@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finland Electricity Prices</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/luxon/2.3.1/luxon.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .dashboard-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .stat-card {
+            background-color: #f5f5f5;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #0066cc;
+        }
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+        }
+        .chart-container {
+            height: 500px;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .last-updated {
+            text-align: right;
+            color: #666;
+            font-size: 14px;
+        }
+        .loading {
+            text-align: center;
+            padding: 50px;
+            font-size: 18px;
+            color: #666;
+        }
+        .error {
+            text-align: center;
+            padding: 50px;
+            font-size: 18px;
+            color: #cc0000;
+        }
+        .price-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 5px;
+        }
+        .indicator-light {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: #ccc;
+        }
+        .low {
+            background-color: #4CAF50; /* Green */
+        }
+        .medium {
+            background-color: #FFC107; /* Yellow */
+        }
+        .high {
+            background-color: #F44336; /* Red */
+        }
+    </style>
+</head>
+<body>
+    <h1>Finland Electricity Prices</h1>
+    <div class="dashboard-container">
+        <div class="stats-container">
+            <div class="stat-card">
+                <div class="stat-label">Current Price</div>
+                <div class="stat-value" id="current-price">--</div>
+                <div>cents/kWh</div>
+                <div class="price-indicator">
+                    <div class="indicator-light" id="price-indicator"></div>
+                    <span id="price-status">Loading...</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Average Price (24h)</div>
+                <div class="stat-value" id="avg-price">--</div>
+                <div>cents/kWh</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Lowest Price</div>
+                <div class="stat-value" id="min-price">--</div>
+                <div id="min-time">--</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Highest Price</div>
+                <div class="stat-value" id="max-price">--</div>
+                <div id="max-time">--</div>
+            </div>
+        </div>
+        
+        <div class="chart-container" id="price-chart">
+            <div class="loading">Loading electricity price data...</div>
+        </div>
+        
+        <div class="last-updated">Last updated: <span id="update-time">--</span></div>
+    </div>
+
+    <script>
+        // Function to format time for display
+        function formatTime(timeString) {
+            const DateTime = luxon.DateTime;
+            const date = DateTime.fromISO(timeString);
+            return date.toFormat('dd.MM HH:mm');
+        }
+        
+        // Function to fetch electricity prices using a CORS proxy
+        async function fetchElectricityPrices() {
+            try {
+                // Use a CORS proxy to access the ENTSO-E API
+                const corsProxy = 'https://cors-anywhere.herokuapp.com/';
+                
+                // Get current date and time in Helsinki timezone
+                const DateTime = luxon.DateTime;
+                const now = DateTime.now().setZone('Europe/Helsinki');
+                
+                // Format dates for ENTSO-E API (UTC format)
+                const periodStart = now.startOf('day').minus({ days: 1 }).toUTC().toFormat('yyyyMMddHHmm');
+                const periodEnd = now.startOf('day').plus({ days: 2 }).toUTC().toFormat('yyyyMMddHHmm');
+                
+                // ENTSO-E API parameters
+                const documentType = 'A44'; // Day-ahead prices
+                const inDomain = '10YFI-1--------U'; // Finland domain code
+                const outDomain = '10YFI-1--------U'; // Finland domain code
+                
+                // Note: You would need to register for an ENTSO-E API key
+                // For this example, we'll use a placeholder and rely on the fallback data
+                const apiKey = 'ad66012e-e2fd-41bd-9306-443cb273854e';
+                
+                // Construct the API URL
+                const apiUrl = `https://web-api.tp.entsoe.eu/api?securityToken=${apiKey}&documentType=${documentType}&in_Domain=${inDomain}&out_Domain=${outDomain}&periodStart=${periodStart}&periodEnd=${periodEnd}`;
+                
+                // Try to fetch data from ENTSO-E API
+                const response = await fetch(corsProxy + apiUrl);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                
+                // ENTSO-E returns XML data
+                const xmlText = await response.text();
+                
+                // Parse XML data
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+                
+                // Process the XML data
+                const processedData = processEntsoeData(xmlDoc, now);
+                updateDashboard(processedData);
+            } catch (error) {
+                console.error('Error fetching electricity prices:', error);
+                document.getElementById('price-chart').innerHTML = 
+                    '<div class="error">Failed to load electricity prices from ENTSO-E API.<br>Error: ' + error.message + '<br><br>Trying fallback data...</div>';
+                
+                // Fallback to static data
+                try {
+                    const fallbackResponse = await fetch('./data/electricity-prices.json');
+                    if (fallbackResponse.ok) {
+                        const fallbackData = await fallbackResponse.json();
+                        updateDashboard(fallbackData);
+                        console.log('Using fallback data');
+                    } else {
+                        throw new Error('Fallback data not available');
+                    }
+                } catch (fallbackError) {
+                    console.error('Fallback data also failed:', fallbackError);
+                    document.getElementById('price-chart').innerHTML = 
+                        '<div class="error">Failed to load electricity prices. Please try again later.<br>Error: ' + fallbackError.message + '</div>';
+                }
+            }
+        }
+        
+        // Process data from ENTSO-E API
+        function processEntsoeData(xmlDoc, now) {
+            // Extract time series data from XML
+            const timeSeries = xmlDoc.getElementsByTagName('TimeSeries');
+            
+            if (timeSeries.length === 0) {
+                throw new Error('No time series data found in ENTSO-E response');
+            }
+            
+            // Process the first time series (day-ahead prices)
+            const series = timeSeries[0];
+            
+            // Get the price unit
+            const priceMeasureUnit = series.getElementsByTagName('price_Measure_Unit.name')[0].textContent;
+            const currency = series.getElementsByTagName('currency_Unit.name')[0].textContent;
+            
+            // Get the time period
+            const timeInterval = series.getElementsByTagName('Period');
+            
+            // Initialize arrays for data
+            const hourlyData = [];
+            
+            // Process each time period
+            for (let i = 0; i < timeInterval.length; i++) {
+                const period = timeInterval[i];
+                const timeStart = period.getElementsByTagName('timeInterval')[0].getElementsByTagName('start')[0].textContent;
+                const resolution = period.getElementsByTagName('resolution')[0].textContent;
+                const points = period.getElementsByTagName('Point');
+                
+                // Parse the start time
+                const startTime = luxon.DateTime.fromISO(timeStart);
+                
+                // Process each point (hourly price)
+                for (let j = 0; j < points.length; j++) {
+                    const point = points[j];
+                    const position = parseInt(point.getElementsByTagName('position')[0].textContent);
+                    const price = parseFloat(point.getElementsByTagName('price.amount')[0].textContent);
+                    
+                    // Calculate the time for this point
+                    // Position 1 = first hour of the interval
+                    const pointTime = startTime.plus({ hours: position - 1 });
+                    
+                    // Convert price from EUR/MWh to cents/kWh
+                    // 1 EUR/MWh = 0.1 cents/kWh
+                    const priceInCentsPerKWh = price * 0.1;
+                    
+                    hourlyData.push({
+                        time: pointTime.toISO(),
+                        price: priceInCentsPerKWh
+                    });
+                }
+            }
+            
+            // Sort data by time
+            hourlyData.sort((a, b) => new Date(a.time) - new Date(b.time));
+            
+            // Calculate statistics
+            const prices = hourlyData.map(item => item.price);
+            const avgPrice = prices.reduce((sum, price) => sum + price, 0) / prices.length;
+            const minPrice = Math.min(...prices);
+            const maxPrice = Math.max(...prices);
+            
+            // Find min and max times
+            const minItem = hourlyData.find(item => item.price === minPrice);
+            const maxItem = hourlyData.find(item => item.price === maxPrice);
+            
+            // Find current price (closest hour)
+            const currentTime = now.startOf('hour').toISO();
+            let currentPrice;
+            let closestItem = hourlyData[0];
+            let minTimeDiff = Infinity;
+            
+            for (const item of hourlyData) {
+                const timeDiff = Math.abs(new Date(item.time) - new Date(currentTime));
+                if (timeDiff < minTimeDiff) {
+                    minTimeDiff = timeDiff;
+                    closestItem = item;
+                }
+            }
+            
+            currentPrice = closestItem.price;
+            
+            // Format data for our dashboard
+            return {
+                last_updated: now.toISO(),
+                current_price: currentPrice,
+                average_price: avgPrice,
+                min_price: {
+                    value: minPrice,
+                    time: minItem.time
+                },
+                max_price: {
+                    value: maxPrice,
+                    time: maxItem.time
+                },
+                hourly_data: hourlyData
+            };
+        }
+        
+        // Function to update the dashboard with data
+        function updateDashboard(data) {
+            // Update stats
+            document.getElementById('current-price').textContent = data.current_price.toFixed(2);
+            document.getElementById('avg-price').textContent = data.average_price.toFixed(2);
+            document.getElementById('min-price').textContent = data.min_price.value.toFixed(2);
+            document.getElementById('min-time').textContent = formatTime(data.min_price.time);
+            document.getElementById('max-price').textContent = data.max_price.value.toFixed(2);
+            document.getElementById('max-time').textContent = formatTime(data.max_price.time);
+            document.getElementById('update-time').textContent = formatTime(data.last_updated);
+            
+            // Update price indicator
+            updatePriceIndicator(data.current_price, data.average_price, data.min_price.value, data.max_price.value);
+            
+            // Create the chart
+            const times = data.hourly_data.map(item => formatTime(item.time));
+            const prices = data.hourly_data.map(item => item.price);
+            
+            const trace = {
+                x: data.hourly_data.map(item => item.time),
+                y: prices,
+                mode: 'lines+markers',
+                name: 'Price',
+                line: {
+                    color: 'rgb(0, 102, 204)',
+                    width: 2
+                },
+                hovertemplate: '%{x|dd.MM HH:mm}: %{y:.2f} cents/kWh<extra></extra>'
+            };
+            
+            const layout = {
+                title: 'Hourly Electricity Prices in Finland',
+                xaxis: {
+                    title: 'Time',
+                    type: 'date',
+                    tickformat: '%d.%m %H:%M',
+                    rangeslider: {visible: true}
+                },
+                yaxis: {
+                    title: 'Price (cents/kWh)'
+                },
+                hovermode: 'closest',
+                shapes: [{
+                    type: 'line',
+                    x0: data.hourly_data[0].time,
+                    y0: data.average_price,
+                    x1: data.hourly_data[data.hourly_data.length - 1].time,
+                    y1: data.average_price,
+                    line: {
+                        color: 'green',
+                        width: 2,
+                        dash: 'dash'
+                    }
+                }]
+            };
+            
+            Plotly.newPlot('price-chart', [trace], layout);
+            
+            // Add a horizontal line for the current price
+            if (data.current_price) {
+                Plotly.addTraces('price-chart', {
+                    x: [data.hourly_data[0].time, data.hourly_data[data.hourly_data.length - 1].time],
+                    y: [data.current_price, data.current_price],
+                    mode: 'lines',
+                    name: 'Current Price',
+                    line: {
+                        color: 'red',
+                        width: 2,
+                        dash: 'dot'
+                    }
+                });
+            }
+        }
+        
+        // Function to update the price indicator
+        function updatePriceIndicator(currentPrice, avgPrice, minPrice, maxPrice) {
+            const indicator = document.getElementById('price-indicator');
+            const status = document.getElementById('price-status');
+            
+            // Calculate thresholds
+            const range = maxPrice - minPrice;
+            const lowThreshold = minPrice + (range * 0.33);
+            const highThreshold = maxPrice - (range * 0.33);
+            
+            // Remove all classes first
+            indicator.classList.remove('low', 'medium', 'high');
+            
+            // Set appropriate class and text
+            if (currentPrice <= lowThreshold) {
+                indicator.classList.add('low');
+                status.textContent = 'Low Price';
+            } else if (currentPrice >= highThreshold) {
+                indicator.classList.add('high');
+                status.textContent = 'High Price';
+            } else {
+                indicator.classList.add('medium');
+                status.textContent = 'Medium Price';
+            }
+        }
+        
+        // Load data when the page loads
+        document.addEventListener('DOMContentLoaded', fetchElectricityPrices);
+        
+        // Refresh data every 15 minutes
+        setInterval(fetchElectricityPrices, 15 * 60 * 1000);
+    </script>
+</body>
+</html>
